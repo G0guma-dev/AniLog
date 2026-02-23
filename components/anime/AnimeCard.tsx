@@ -1,6 +1,5 @@
 "use client";
 
-import Image from "next/image";
 import type { AnimeEntry } from "@/lib/types";
 import { Button } from "@/components/ui/button";
 
@@ -25,14 +24,14 @@ export default function AnimeCard({
         if (e.key === "Enter" || e.key === " ") onOpen(entry);
       }}
     >
+      {/* 🔥 이미지 영역 */}
       <div className="relative aspect-[3/4] w-full overflow-hidden bg-white">
         {entry.image_url ? (
-          <Image
+          <img
             src={entry.image_url}
             alt={entry.title}
-            fill
-            className="object-cover transition group-hover:scale-[1.02]"
-            sizes="(max-width: 640px) 90vw, (max-width: 1024px) 50vw, 25vw"
+            loading="lazy"
+            className="h-full w-full object-cover transition group-hover:scale-[1.02]"
           />
         ) : (
           <div className="flex h-full items-center justify-center text-sm text-slate-500">
@@ -41,10 +40,13 @@ export default function AnimeCard({
         )}
       </div>
 
+      {/* 🔥 텍스트 영역 */}
       <div className="p-4">
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0">
-            <div className="truncate text-base font-extrabold">{entry.title}</div>
+            <div className="truncate text-base font-extrabold">
+              {entry.title}
+            </div>
             <div className="mt-1 text-xs text-slate-600">
               {entry.season}기 · {entry.episode}/{entry.total_episodes}화
             </div>
