@@ -25,7 +25,7 @@ const nextConfig: NextConfig = {
 
       // ✅ Supabase Storage 쓰면 여기 꼭 필요
       // 예: https://xxxx.supabase.co/storage/v1/object/public/...
-      { protocol: "https", hostname: "**.supabase.co" },
+      { protocol: "https", hostname: "https://eimctazerkmjaxhqrzzi.supabase.co" },
     ],
   },
 };
