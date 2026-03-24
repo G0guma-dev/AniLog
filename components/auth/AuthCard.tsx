@@ -12,7 +12,6 @@ export default function AuthCard({ mode }: { mode: Mode }) {
   const supabase = createSupabaseBrowser();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [nickname, setNickname] = useState("");
   const [loading, setLoading] = useState(false);
   const [msg, setMsg] = useState<string | null>(null);
 
@@ -22,21 +21,27 @@ export default function AuthCard({ mode }: { mode: Mode }) {
 
     try {
       if (mode === "signup") {
-        const { data, error } = await supabase.auth.signUp({ email, password });
+        const { data, error } = await supabase.auth.signUp({
+          email,
+          password,
+        });
         if (error) throw error;
 
         const userId = data.user?.id;
         if (!userId) throw new Error("유저 생성에 실패했습니다.");
 
-        // profiles upsert
         const { error: pErr } = await supabase
           .from("profiles")
-          .upsert({ id: userId, nickname: nickname.trim() || "사용자" });
+          .upsert({ id: userId });
+
         if (pErr) throw pErr;
 
-        setMsg("회원가입 완료! 이메일 인증이 필요할 수 있어요. 로그인 페이지로 이동해 주세요.");
+        setMsg("회원가입 완료! 로그인 페이지로 이동해 주세요.");
       } else {
-        const { error } = await supabase.auth.signInWithPassword({ email, password });
+        const { error } = await supabase.auth.signInWithPassword({
+          email,
+          password,
+        });
         if (error) throw error;
 
         window.location.href = "/app";
@@ -54,13 +59,6 @@ export default function AuthCard({ mode }: { mode: Mode }) {
         <CardTitle>{mode === "login" ? "로그인" : "회원가입"}</CardTitle>
       </CardHeader>
       <CardContent className="space-y-3">
-        {mode === "signup" && (
-          <Input
-            placeholder="닉네임"
-            value={nickname}
-            onChange={(e) => setNickname(e.target.value)}
-          />
-        )}
         <Input
           placeholder="이메일"
           value={email}
