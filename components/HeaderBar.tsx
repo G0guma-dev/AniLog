@@ -22,7 +22,7 @@ export default function HeaderBar({ nickname, onTutorial }: Props) {
   };
 
   return (
-    <header className="mx-auto flex w-full max-w-6xl items-center justify-between gap-3 px-4 py-6">
+    <header className="mx-auto flex w-full max-w-6xl flex-col gap-3 px-4 py-4 sm:flex-row sm:items-center sm:justify-between sm:py-6">
       <div className="flex min-w-0 items-center gap-3">
         <Link
           href="/app"
@@ -31,29 +31,27 @@ export default function HeaderBar({ nickname, onTutorial }: Props) {
           AniLog
         </Link>
 
-        {nickname ? (
-          <span className="inline-flex max-w-[120px] shrink-0 items-center rounded-full border border-slate-200 bg-white/60 px-3 py-1 text-sm text-slate-700 whitespace-nowrap backdrop-blur overflow-hidden text-ellipsis sm:max-w-none">
-            {nickname}님
+        <span className="inline-flex min-w-0 max-w-[140px] items-center rounded-full border border-slate-200 bg-white/60 px-3 py-1 text-sm text-slate-700 backdrop-blur sm:max-w-[220px]">
+          <span className="truncate whitespace-nowrap">
+            {nickname ? `${nickname}님` : "닉네임 미설정"}
           </span>
-        ) : (
-          <span className="inline-flex shrink-0 items-center rounded-full border border-slate-200 bg-white/60 px-3 py-1 text-sm text-slate-600 whitespace-nowrap backdrop-blur">
-            닉네임 미설정
-          </span>
-        )}
+        </span>
       </div>
 
-      <div className="flex shrink-0 items-center gap-2">
+      <div className="grid grid-cols-3 gap-2 sm:flex sm:items-center">
         {onTutorial && (
-          <Button variant="outline" onClick={onTutorial}>
+          <Button variant="outline" onClick={onTutorial} className="w-full">
             튜토리얼
           </Button>
         )}
 
-        <Link href="/app/profile">
-          <Button variant="outline">프로필</Button>
+        <Link href="/app/profile" className="w-full">
+          <Button variant="outline" className="w-full">
+            프로필
+          </Button>
         </Link>
 
-        <Button variant="outline" onClick={handleLogout}>
+        <Button variant="outline" onClick={handleLogout} className="w-full">
           로그아웃
         </Button>
       </div>
