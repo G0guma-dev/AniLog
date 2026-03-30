@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import type { AnimeEntry } from "@/lib/types";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { createSupabaseBrowser } from "@/lib/supabase/browser";
 
 type Mode = "create" | "edit";
 
@@ -39,16 +40,19 @@ export default function AnimeEditorDialog({
     image_url?: string | null;
   }) => Promise<void>;
 }) {
-  const [title, setTitle] = useState("");
-  const [ratingStr, setRatingStr] = useState(""); // ✅ string
-  const [seasonStr, setSeasonStr] = useState(""); // ✅ string
-  const [episodeStr, setEpisodeStr] = useState(""); // ✅ string
-  const [totalEpisodesStr, setTotalEpisodesStr] = useState(""); // ✅ string
+  const supabase = createSupabaseBrowser();
 
-  const [imageUrl, setImageUrl] = useState("");
+  const [title, setTitle] = useState("");
+  const [ratingStr, setRatingStr] = useState("");
+  const [seasonStr, setSeasonStr] = useState("");
+  const [episodeStr, setEpisodeStr] = useState("");
+  const [totalEpisodesStr, setTotalEpisodesStr] = useState("");
   const [tagsText, setTagsText] = useState("");
   const [comment, setComment] = useState("");
+  const [imageUrl, setImageUrl] = useState("");
+
   const [saving, setSaving] = useState(false);
+  const [uploadingImage, setUploadingImage] = useState(false);
 
   useEffect(() => {
     if (!open) return;
@@ -61,18 +65,18 @@ export default function AnimeEditorDialog({
       setTotalEpisodesStr(
         initial.total_episodes ? String(initial.total_episodes) : ""
       );
-      setImageUrl(initial.image_url ?? "");
       setTagsText((initial.tags ?? []).join(", "));
       setComment(initial.comment ?? "");
+      setImageUrl(initial.image_url ?? "");
     } else {
       setTitle("");
       setRatingStr("");
       setSeasonStr("");
       setEpisodeStr("");
       setTotalEpisodesStr("");
-      setImageUrl("");
       setTagsText("");
       setComment("");
+      setImageUrl("");
     }
   }, [open, mode, initial]);
 
@@ -85,20 +89,68 @@ export default function AnimeEditorDialog({
     [tagsText]
   );
 
-  // ✅ 저장 직전에만 숫자로 변환 (빈칸은 기본값)
   const rating = ratingStr === "" ? 0 : Number(ratingStr);
   const season = seasonStr === "" ? 1 : Number(seasonStr);
   const episode = episodeStr === "" ? 0 : Number(episodeStr);
   const totalEpisodes = totalEpisodesStr === "" ? 0 : Number(totalEpisodesStr);
 
+  async function handleImageUpload(file: File) {
+    const allowedTypes = ["image/jpeg", "image/png", "image/webp", "image/gif"];
+    const maxSize = 5 * 1024 * 1024; // 5MB
+
+    if (!allowedTypes.includes(file.type)) {
+      alert("jpg, png, webp, gif 파일만 업로드할 수 있어요.");
+      return;
+    }
+
+    if (file.size > maxSize) {
+      alert("이미지는 5MB 이하만 업로드할 수 있어요.");
+      return;
+    }
+
+    try {
+      setUploadingImage(true);
+
+      const fileExt = file.name.split(".").pop()?.toLowerCase() || "png";
+      const baseName = file.name.replace(/\.[^/.]+$/, "");
+      const safeName = baseName
+        .replace(/\s+/g, "-")
+        .replace(/[^\w\-]/g, "");
+
+      const filePath = `uploads/${Date.now()}-${safeName}.${fileExt}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from("anime-images")
+        .upload(filePath, file, {
+          upsert: false,
+        });
+
+      if (uploadError) throw uploadError;
+
+      const { data } = supabase.storage
+        .from("anime-images")
+        .getPublicUrl(filePath);
+
+      if (!data?.publicUrl) {
+        throw new Error("업로드 후 이미지 URL을 가져오지 못했습니다.");
+      }
+
+      setImageUrl(data.publicUrl);
+    } catch (e: unknown) {
+      console.error(e);
+      alert(errMsg(e));
+    } finally {
+      setUploadingImage(false);
+    }
+  }
+
   if (!open) return null;
 
   return (
     <div className="fixed inset-0 z-50">
-      {/* overlay */}
       <div className="absolute inset-0 bg-black/30" onClick={onClose} />
-      {/* panel */}
-      <div className="absolute left-1/2 top-1/2 w-[min(560px,92vw)] -translate-x-1/2 -translate-y-1/2 rounded-3xl border border-slate-200 bg-white p-5 shadow-2xl">
+
+      <div className="absolute left-1/2 top-1/2 max-h-[90vh] w-[min(560px,92vw)] -translate-x-1/2 -translate-y-1/2 overflow-y-auto rounded-3xl border border-slate-200 bg-white p-5 shadow-2xl">
         <div className="flex items-start justify-between gap-3">
           <h2 className="text-lg font-extrabold">
             {mode === "create" ? "새 기록 추가" : "기록 수정"}
@@ -164,13 +216,41 @@ export default function AnimeEditorDialog({
           </div>
 
           <div>
-            <div className="mb-1 text-xs font-bold text-slate-600">이미지 URL(선택)</div>
-            <Input
-              placeholder="https://..."
-              value={imageUrl}
-              onChange={(e) => setImageUrl(e.target.value)}
+            <div className="mb-1 text-xs font-bold text-slate-600">이미지 업로드</div>
+
+            <input
+              type="file"
+              accept="image/*"
+              onChange={async (e) => {
+                const file = e.target.files?.[0];
+                if (!file) return;
+                await handleImageUpload(file);
+              }}
+              className="block w-full rounded-2xl border border-slate-200 bg-white p-3 text-sm file:mr-3 file:rounded-xl file:border-0 file:bg-slate-100 file:px-3 file:py-2 file:text-sm file:font-medium hover:file:bg-slate-200"
             />
+
+            <p className="mt-2 text-xs text-slate-500">
+              jpg, png, webp, gif / 최대 5MB
+            </p>
+
+            {uploadingImage && (
+              <p className="mt-2 text-xs text-emerald-600">이미지 업로드 중...</p>
+            )}
           </div>
+
+          {imageUrl.trim() && (
+            <div className="overflow-hidden rounded-2xl border border-slate-200 bg-slate-50 p-3">
+              <div className="mb-2 text-xs font-bold text-slate-600">이미지 미리보기</div>
+              <div className="h-48 w-full overflow-hidden rounded-xl bg-white">
+                <img
+                  src={imageUrl}
+                  alt={title || "미리보기"}
+                  className="h-full w-full object-cover"
+                  loading="lazy"
+                />
+              </div>
+            </div>
+          )}
 
           <div>
             <div className="mb-1 text-xs font-bold text-slate-600">
@@ -197,16 +277,21 @@ export default function AnimeEditorDialog({
         <div className="mt-5 flex gap-2">
           <Button
             className="flex-1"
-            disabled={saving || !title.trim()}
+            disabled={saving || uploadingImage || !title.trim()}
             onClick={async () => {
               try {
                 setSaving(true);
 
-                // ✅ 안전 범위 보정
-                const safeRating = Math.max(0, Math.min(5, isNaN(rating) ? 0 : rating));
+                const safeRating = Math.max(
+                  0,
+                  Math.min(5, isNaN(rating) ? 0 : rating)
+                );
                 const safeSeason = Math.max(1, isNaN(season) ? 1 : season);
                 const safeEpisode = Math.max(0, isNaN(episode) ? 0 : episode);
-                const safeTotal = Math.max(0, isNaN(totalEpisodes) ? 0 : totalEpisodes);
+                const safeTotal = Math.max(
+                  0,
+                  isNaN(totalEpisodes) ? 0 : totalEpisodes
+                );
 
                 await onSave({
                   title: title.trim(),
