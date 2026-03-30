@@ -96,7 +96,7 @@ export default function AnimeEditorDialog({
 
   async function handleImageUpload(file: File) {
     const allowedTypes = ["image/jpeg", "image/png", "image/webp", "image/gif"];
-    const maxSize = 5 * 1024 * 1024; // 5MB
+    const maxSize = 5 * 1024 * 1024;
 
     if (!allowedTypes.includes(file.type)) {
       alert("jpg, png, webp, gif 파일만 업로드할 수 있어요.");
@@ -115,7 +115,7 @@ export default function AnimeEditorDialog({
       const baseName = file.name.replace(/\.[^/.]+$/, "");
       const safeName = baseName
         .replace(/\s+/g, "-")
-        .replace(/[^\w\-]/g, "");
+        .replace(/[^\w\-가-힣]/g, "");
 
       const filePath = `uploads/${Date.now()}-${safeName}.${fileExt}`;
 
@@ -148,9 +148,9 @@ export default function AnimeEditorDialog({
 
   return (
     <div className="fixed inset-0 z-50">
-      <div className="absolute inset-0 bg-black/30" onClick={onClose} />
+      <div className="absolute inset-0 bg-black/40" onClick={onClose} />
 
-      <div className="absolute left-1/2 top-1/2 max-h-[90vh] w-[min(560px,92vw)] -translate-x-1/2 -translate-y-1/2 overflow-y-auto rounded-3xl border border-slate-200 bg-white p-5 shadow-2xl">
+      <div className="absolute left-1/2 top-1/2 max-h-[90vh] w-[min(620px,92vw)] -translate-x-1/2 -translate-y-1/2 overflow-y-auto rounded-3xl border border-slate-200 bg-white p-5 shadow-2xl">
         <div className="flex items-start justify-between gap-3">
           <h2 className="text-lg font-extrabold">
             {mode === "create" ? "새 기록 추가" : "기록 수정"}
@@ -160,7 +160,7 @@ export default function AnimeEditorDialog({
           </Button>
         </div>
 
-        <div className="mt-4 grid gap-3">
+        <div className="mt-4 grid gap-4">
           <div>
             <div className="mb-1 text-xs font-bold text-slate-600">애니 제목</div>
             <Input value={title} onChange={(e) => setTitle(e.target.value)} />
@@ -216,36 +216,41 @@ export default function AnimeEditorDialog({
           </div>
 
           <div>
-            <div className="mb-1 text-xs font-bold text-slate-600">이미지 업로드</div>
+            <div className="mb-2 text-xs font-bold text-slate-600">이미지 업로드</div>
 
-            <input
-              type="file"
-              accept="image/*"
-              onChange={async (e) => {
-                const file = e.target.files?.[0];
-                if (!file) return;
-                await handleImageUpload(file);
-              }}
-              className="block w-full rounded-2xl border border-slate-200 bg-white p-3 text-sm file:mr-3 file:rounded-xl file:border-0 file:bg-slate-100 file:px-3 file:py-2 file:text-sm file:font-medium hover:file:bg-slate-200"
-            />
+            <div className="rounded-3xl border border-slate-200 bg-slate-50 p-3">
+              <input
+                type="file"
+                accept="image/*"
+                onChange={async (e) => {
+                  const file = e.target.files?.[0];
+                  if (!file) return;
+                  await handleImageUpload(file);
+                }}
+                className="block w-full rounded-2xl border border-slate-200 bg-white p-3 text-sm file:mr-3 file:rounded-xl file:border-0 file:bg-slate-100 file:px-3 file:py-2 file:text-sm file:font-medium hover:file:bg-slate-200"
+              />
 
-            <p className="mt-2 text-xs text-slate-500">
-              jpg, png, webp, gif / 최대 5MB
-            </p>
+              <p className="mt-3 text-sm text-slate-500">
+                jpg, png, webp, gif / 최대 5MB
+              </p>
 
-            {uploadingImage && (
-              <p className="mt-2 text-xs text-emerald-600">이미지 업로드 중...</p>
-            )}
+              {uploadingImage && (
+                <p className="mt-2 text-sm font-medium text-emerald-600">
+                  이미지 업로드 중...
+                </p>
+              )}
+            </div>
           </div>
 
           {imageUrl.trim() && (
-            <div className="overflow-hidden rounded-2xl border border-slate-200 bg-slate-50 p-3">
-              <div className="mb-2 text-xs font-bold text-slate-600">이미지 미리보기</div>
-              <div className="h-48 w-full overflow-hidden rounded-xl bg-white">
+            <div className="rounded-3xl border border-slate-200 bg-slate-50 p-4">
+              <div className="mb-3 text-sm font-bold text-slate-700">이미지 미리보기</div>
+
+              <div className="flex min-h-[280px] items-center justify-center overflow-hidden rounded-2xl bg-white p-4">
                 <img
                   src={imageUrl}
                   alt={title || "미리보기"}
-                  className="h-full w-full object-cover"
+                  className="max-h-[420px] w-full object-contain"
                   loading="lazy"
                 />
               </div>
@@ -266,7 +271,7 @@ export default function AnimeEditorDialog({
           <div>
             <div className="mb-1 text-xs font-bold text-slate-600">코멘트</div>
             <textarea
-              className="min-h-[120px] w-full rounded-2xl border border-slate-200 bg-white/80 p-3 text-sm outline-none shadow-sm focus:ring-2 focus:ring-emerald-200"
+              className="min-h-[140px] w-full rounded-2xl border border-slate-200 bg-white/80 p-3 text-sm outline-none shadow-sm focus:ring-2 focus:ring-emerald-200"
               value={comment}
               onChange={(e) => setComment(e.target.value)}
               placeholder="느낀 점, 추천 포인트 등"
