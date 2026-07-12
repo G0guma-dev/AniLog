@@ -53,7 +53,7 @@ export default function AnimeCard({
           </div>
 
           <div className="shrink-0 rounded-full border border-slate-200 bg-white/70 px-3 py-1 text-sm font-bold">
-            ★ {entry.rating}
+            ⭐ {entry.rating}
           </div>
         </div>
 
